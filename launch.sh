@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
 THIS_DIR=$(cd $(dirname $0); pwd)
-RAM=`grep MemTotal /proc/meminfo | awk '{print $2}'`
 cd $THIS_DIR
 
 update() {
@@ -63,19 +62,32 @@ install_rocks() {
   RET=$?; if [ $RET -ne 0 ];
     then echo "Error. Exiting."; exit $RET;
   fi
+
+  ./.luarocks/bin/luarocks install feedparser
+  RET=$?; if [ $RET -ne 0 ];
+    then echo "Error. Exiting."; exit $RET;
+  fi
+
+  ./.luarocks/bin/luarocks install serpent
+  RET=$?; if [ $RET -ne 0 ];
+    then echo "Error. Exiting."; exit $RET;
+  fi
 }
 
 install() {
   git pull
   git submodule update --init --recursive
-  # If RAM is lower than 300MB disable extf queries
-  if [ $RAM -lt 307200 ]; then
-      cd tg && ./configure --disable-extf && make
-  else
-      cd tg && ./configure && make
+  patch -i "patches/disable-python-and-libjansson.patch" -p 0 --batch --forward
+  RET=$?;
+
+  cd tg
+  if [ $RET -ne 0 ]; then
+    autoconf -i
   fi
-  RET=$?; if [ $RET -ne 0 ];
-    then echo "Error. Exiting."; exit $RET;
+  ./configure && make
+
+  RET=$?; if [ $RET -ne 0 ]; then
+    echo "Error. Exiting."; exit $RET;
   fi
   cd ..
   install_luarocks
@@ -99,5 +111,5 @@ else
     exit 1
   fi
 
-  ./tg/bin/telegram-cli -k ./tg/tg-server.pub -s ./bot/bot.lua -l 1 -E
+  ./tg/bin/telegram-cli -k ./tg/tg-server.pub -s ./bot/bot.lua -l 1 -E $@
 fi

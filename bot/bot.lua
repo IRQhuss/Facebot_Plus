@@ -4,7 +4,9 @@ package.cpath = package.cpath .. ';.luarocks/lib/lua/5.2/?.so'
 
 require("./bot/utils")
 
-VERSION = '0.12.2'
+local f = assert(io.popen('/usr/bin/git describe --tags', 'r'))
+VERSION = assert(f:read('*a'))
+f:close()
 
 -- This function is called when tg receive a msg
 function on_msg_receive (msg)
@@ -92,7 +94,6 @@ function pre_process_service_msg(msg)
       local action = msg.action or {type=""}
       -- Double ! to discriminate of normal actions
       msg.text = "!!tgservice " .. action.type
-      msg.realservice = true
 
       -- wipe the data to allow the bot to read service messages
       if msg.out then
@@ -213,6 +214,7 @@ function create_config( )
       "google",
       "gps",
       "help",
+      "id",
       "images",
       "img_google",
       "location",
